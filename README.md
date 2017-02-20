@@ -9,7 +9,10 @@ The alternate version is just something I made for my own use. It assumes the in
 
 #Usage
 1. Include the JavaScript file.
-2. Call `fitCurves` with an array of points to fit a curve to.
-3. The function will return an array of the four points required to plot a cubic Bézier curve.
+2. Call `fitCurves()` with an array of points to fit a curve to.
+3. Depending on which file you are using:
+  * `fitCurves.js`
+  The function will return an array of arrays of the four points required to plot a cubic Bézier curve.
+  * `fitCurvesAlt.js` The function will return a single array of the four points required to plot a cubic Bézier curve.
 
 A 'point' is just an array of two numbers.
