@@ -1,38 +1,15 @@
-JavaScript implementation of Philip J. Schneider's "Algorithm for Automatically Fitting Digitized Curves" from the book "Graphics Gems".
-Converted from Python implementation.
+JavaScript implementation of  
+CoffeeScript implementation of  
+Python implementation of  
+Algorithm for Automatically Fitting Digitized Curves  
+by Philip J. Schneider  
+"Graphics Gems", Academic Press, 1990
 
-Fit one or more cubic Bezier curves to a polyline.
+The alternate version is just something I made for my own use. It assumes the input only has five points and that the first point is (0,0) and the last point is (1,1).
 
-This is a JS implementation of Philip J. Schneider's C code. The original C code is available on http://graphicsgems.org/ as well as in https://github.com/erich666/GraphicsGems
+#Usage
+1. Include the JavaScript file.
+2. Call `fitCurves` with an array of points to fit a curve to.
+3. The function will return an array of the four points required to plot a cubic Bézier curve.
 
-## Install
-
-```
-npm install --save fit-curve
-```
-
-```
-bower install --save fit-curve
-```
-
-## Usage
-
-```javascript
-var fitCurve = require('fit-curve');
-var points = [[0, 0], [10, 10], [10, 0], [20, 0]];
-var error = 50; // The smaller the number - the much closer spline should be
-
-var bezierCurves = fitCurve(points, error);
-// bezierCurves[0] === [[0, 0], [20.27317402, 20.27317402], [-1.24665147, 0], [20, 0]]
-// where each element is [x, y] and elements are [first-point, control-point-1, control-point-2, second-point]
-```
-
-You can play around with that in this [demo](http://soswow.github.io/fit-curve/demo).
-
-![demo](https://github.com/soswow/fit-curves/raw/master/demo-screenshot.png "Demo")
-
-## Development
-
-`npm install` - builds transpiled and minified versions into `/lib`
-
-`npm test` - runs tests
+A 'point' is just an array of two numbers.
