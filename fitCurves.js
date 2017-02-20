@@ -8,11 +8,14 @@
 
 	CoffeeScript Source: https://github.com/soswow/fit-curves/blob/master/src/fitCurves.coffee
 	JavaScript Implementation by Yay295
-	Changes:
+	V1 Changes:
 	- The lodash library is no longer required.
 	- The math.js library is still required.
 	- Much better scoping.
 	- It's not CoffeeScript.
+	V2 Changes:
+	- The math.js library is no longer required.
+	- Some bugs were fixed.
 */
 
 /*
@@ -23,43 +26,33 @@
 	given points. This should be a number greater than 0, with a lesser number
 	giving a closer fit.
 
-	return - An array of the four points required for a Cubic Bezier Curve.
+	return - An array of arrays of the four points required for a Cubic Bezier Curve.
 */
 function fitCurve(points,maxError) {
 	// math.js functions used in this file
-	var add = math.add;
-	var chain = math.chain;
-	var divide = math.divide;
-	var dot = math.dot;
-	var dotPow = math.dotPow;
-	var multiply = math.multiply;
-	var norm = math.norm;
-	var subtract = math.subtract;
-	var sum = math.sum;
-	var zeros = math.zeros;
+	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
+	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1]];
+	var multiply = (A,B) => [A[0]*B,A[1]*B];
+	var divide = (A,B) => [A[0]/B,A[1]/B];
+	var dot = (A,B) => A[0]*B[0]+A[1]*B[1];
+	var sum = A => A[0]+A[1];
+	var norm = A => Math.sqrt((A[0]*A[0])+(A[1]*A[1]));
+	var normalize = v => divide(v,norm(v));
 
 	// native js implementations of 'lodash' functions
-	function last(array) {
-		return array[array.length-1];
-	}
-	function zip(a1,a2) {
+	let last = A => A[A.length-1];
+	function zip(A,B) {
 		var ret = [];
-		for (var i = 0, len = a1.length; i < len; ++i)
-			ret.push([a1[i],a2[i]]);
+		for (var i = 0, len = A.length; i < len; ++i)
+			ret.push([A[i],B[i]]);
 		return ret;
 	}
 
 
 	var bezier = {
-		q: function(ctrlPoly,t) {
-			return chain(multiply(Math.pow(1-t,3), ctrlPoly[0])).add(multiply(3 * Math.pow(1 - t, 2) * t, ctrlPoly[1])).add(multiply(3 * (1 - t) * Math.pow(t, 2), ctrlPoly[2])).add(multiply(Math.pow(t, 3), ctrlPoly[3])).done();
-		},
-		qprime: function(ctrlPoly,t) {
-			return chain(multiply(3 * Math.pow(1-t,2), subtract(ctrlPoly[1], ctrlPoly[0]))).add(multiply(6 * (1 - t) * t, subtract(ctrlPoly[2], ctrlPoly[1]))).add(multiply(3 * Math.pow(t, 2), subtract(ctrlPoly[3], ctrlPoly[2]))).done();
-		},
-		qprimeprime: function(ctrlPoly,t) {
-			return add(multiply(6 * (1-t), add(subtract(ctrlPoly[2], multiply(2, ctrlPoly[1])), ctrlPoly[0])), multiply(6 * t, add(subtract(ctrlPoly[3], multiply(2, ctrlPoly[2])), ctrlPoly[1])));
-		}
+		q: (ctrlPoly,t) => add(add(add(multiply(ctrlPoly[0], Math.pow(1-t,3)), multiply(ctrlPoly[1], 3 * Math.pow(1-t,2) * t)), multiply(ctrlPoly[2], 3 * (1 - t) * Math.pow(t,2))), multiply(ctrlPoly[3], Math.pow(t,3))),
+		qprime: (ctrlPoly,t) => add(add(multiply(subtract(ctrlPoly[1], ctrlPoly[0]), 3 * Math.pow(1-t,2)), multiply(subtract(ctrlPoly[2], ctrlPoly[1]), 6 * (1 - t) * t)), multiply(subtract(ctrlPoly[3], ctrlPoly[2]), 3 * Math.pow(t,2))),
+		qprimeprime: (ctrlPoly,t) => add(multiply(add(subtract(ctrlPoly[2], multiply(ctrlPoly[1], 2)), ctrlPoly[0]), 6 * (1-t)), multiply(add(subtract(ctrlPoly[3], multiply(ctrlPoly[2], 2)), ctrlPoly[1]), 6 * t))
 	};
 
 	function fitCubic(points, leftTangent, rightTangent, error) {
@@ -71,7 +64,7 @@ function fitCurve(points,maxError) {
 
 		function generateBezier(points, parameters, leftTangent, rightTangent) {
 			var bezCurve = [points[0], null, null, last(points)];
-			var A = zeros(parameters.length, 2, 2).valueOf();
+			var A = Array(parameters.length).fill([[0,0],[0,0]]);
 
 			for (var i = 0, len = parameters.length; i < len; ++i) {
 				var u = parameters[i];
@@ -145,11 +138,11 @@ function fitCurve(points,maxError) {
 		if (maxError < error) return [bezCurve];
 
 
-		function reparameterize(bezier, points, parameters) {
+		function reparameterize(points, parameters) {
 			var ref = zip(points, parameters);
 			var results = [];
 
-			function newtonRaphsonRootFind(bez, point, u) {
+			function newtonRaphsonRootFind(point,u) {
 				// Newton's root finding algorithm calculates f(x)=0 by reiterating x_n+1 = x_n - f(x_n)/f'(x_n)
 				// We are trying to find curve parameter u for some point p that minimizes
 				// the distance from that point to the curve. Distance point to curve is d=q(u)-p.
@@ -157,22 +150,23 @@ function fitCurve(points,maxError) {
 				// We are solving f = q(u)-p * q'(u) = 0 with f' = q'(u) * q'(u) + q(u)-p * q''(u)
 				// gives u_n+1 = u_n - |q(u_n)-p * q'(u_n)| / |q'(u_n)**2 + q(u_n)-p * q''(u_n)|
 
-				var qprime = bezier.qprime(bez,u);
-				var numerator = sum(multiply(subtract(bezier.q(bez,u),point),qprime));
-				var denominator = sum(add(dotPow(qprime,2),multiply(d,bezier.qprimeprime(bez,u))));
+				var d = subtract(bezier.q(bezCurve,u),point);
+				var qprime = bezier.qprime(bezCurve,u);
+				var numerator = sum(multiply(d,qprime));
+				var denominator = sum(add([qprime[0]*qprime[0],qprime[1]*qprime[1]],multiply(bezier.qprimeprime(bezCurve,u),d)));
 
-				return (!denominatior ? 0 : (u - numerator / denominator));
+				return (!denominator ? 0 : (u - numerator / denominator));
 			}
 
 			for (var i = 0, len = ref.length; i < len; ++i)
-				results.push(newtonRaphsonRootFind(bezier, ref[i][0], ref[i][1]));
+				results.push(newtonRaphsonRootFind(ref[i][0], ref[i][1]));
 
 			return results;
 		}
 
 		if (maxError < error*error) {
 			for (var i = 0; i < 20; ++i) {
-				var uPrime = reparameterize(bezCurve, points, u);
+				var uPrime = reparameterize(points, u);
 				bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent);
 				var temp = computeMaxError(points, bezCurve, uPrime);
 				maxError = temp[0], splitPoint = temp[1];
@@ -186,12 +180,8 @@ function fitCurve(points,maxError) {
 		var centerTangent = normalize(subtract(points[splitPoint-1], points[splitPoint+1]));
 
 		var beziers = [].concat(fitCubic(points.slice(0,splitPoint+1), leftTangent, centerTangent, error));
-		beziers = beziers.concat(fitCubic(points.slice(splitPoint), multiply(centerTangent,-1), rightTangent, error));
-		return beziers;
+		return beziers.concat(fitCubic(points.slice(splitPoint), multiply(centerTangent,-1), rightTangent, error));
 	}
-
-	function normalize(v) {return divide(v,norm(v));}
-
 
 	var leftTangent = normalize(subtract(points[1],points[0]));
 	var rightTangent = normalize(subtract(points[points.length-2],last(points)));
