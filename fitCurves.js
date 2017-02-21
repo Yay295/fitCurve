@@ -16,6 +16,9 @@
 	V2 Changes:
 	- The math.js library is no longer required.
 	- Some bugs were fixed.
+	V3 Changes:
+	- Strict mode added.
+	- Some small issues fixed.
 */
 
 /*
@@ -29,6 +32,8 @@
 	return - An array of arrays of the four points required for a Cubic Bezier Curve.
 */
 function fitCurve(points,maxError) {
+	"use strict";
+
 	// math.js functions used in this file
 	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
 	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1]];
@@ -43,7 +48,7 @@ function fitCurve(points,maxError) {
 	let last = A => A[A.length-1];
 	function zip(A,B) {
 		var ret = [];
-		for (var i = 0, len = A.length; i < len; ++i)
+		for (let i = 0, len = A.length; i < len; ++i)
 			ret.push([A[i],B[i]]);
 		return ret;
 	}
@@ -66,7 +71,7 @@ function fitCurve(points,maxError) {
 			var bezCurve = [points[0], null, null, last(points)];
 			var A = Array(parameters.length).fill([[0,0],[0,0]]);
 
-			for (var i = 0, len = parameters.length; i < len; ++i) {
+			for (let i = 0, len = parameters.length; i < len; ++i) {
 				var u = parameters[i];
 				A[i][0] = multiply(leftTangent, 3 * (1 - u) * (1 - u) * u);
 				A[i][1] = multiply(rightTangent, 3 * (1 - u) * u * u);
@@ -76,7 +81,7 @@ function fitCurve(points,maxError) {
 			var X = [0,0];
 			var ref = zip(points, parameters);
 
-			for (var i = 0, len = ref.length; i < len; ++i) {
+			for (let i = 0, len = ref.length; i < len; ++i) {
 				C[0][0] += dot(A[i][0],A[i][0]);
 				C[0][1] += dot(A[i][0],A[i][1]);
 				C[1][0] += dot(A[i][0],A[i][1]);
@@ -108,9 +113,9 @@ function fitCurve(points,maxError) {
 		}
 
 		var u = [0];
-		for (var i = 1, len = points.length; i < len; ++i)
+		for (let i = 1, len = points.length; i < len; ++i)
 			u.push(u[i-1] + norm(subtract(points[i],points[i-1])));
-		for (var i = 0, len = u.length; i < len; ++i)
+		for (let i = 0, len = u.length; i < len; ++i)
 			u[i] /= last(u);
 
 
@@ -119,7 +124,7 @@ function fitCurve(points,maxError) {
 			var splitPoint = points.length / 2;
 			var ref = zip(points,parameters);
 
-			for (var i = 0, len = ref.length; i < len; ++i) {
+			for (let i = 0, len = ref.length; i < len; ++i) {
 				var dist = Math.pow(norm(subtract(bezier.q(bez,ref[i][1]),ref[i][0])),2);
 				if (dist > maxDist) {
 					maxDist = dist;
@@ -158,18 +163,19 @@ function fitCurve(points,maxError) {
 				return (!denominator ? 0 : (u - numerator / denominator));
 			}
 
-			for (var i = 0, len = ref.length; i < len; ++i)
-				results.push(newtonRaphsonRootFind(ref[i][0], ref[i][1]));
+			for (let r of ref) results.push(newtonRaphsonRootFind(r[0],r[1]));
 
 			return results;
 		}
 
 		if (maxError < error*error) {
-			for (var i = 0; i < 20; ++i) {
+			for (let i = 0; i < 20; ++i) {
 				var uPrime = reparameterize(points, u);
 				bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent);
+
 				var temp = computeMaxError(points, bezCurve, uPrime);
-				maxError = temp[0], splitPoint = temp[1];
+				maxError = temp[0];
+				splitPoint = temp[1];
 
 				if (maxError < error) return [bezCurve];
 
