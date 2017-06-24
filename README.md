@@ -7,7 +7,7 @@ by Philip J. Schneider
 
 The alternate version is just something I made for my own use. It assumes the input only has five points and that the first point is (0,0) and the last point is (1,1).
 
-#Usage
+# Usage
 1. Include the JavaScript file.
 
 If you included `fitCurves.js`
