@@ -23,9 +23,8 @@
 	- Added strict mode.
 	- Unrolled some loops.
 	- "Inlined" some functions that were only called once.
+	Note: None of the V4 changes in the full version affected this version.
 */
-
-"use strict";
 
 /*
 	points - An array of points (ex. [[0,0],[0.25,5],[0.5,7],[0.75,3],[1,1]]) that reside on the
@@ -34,6 +33,8 @@
 	return - An array of the four points required for a Cubic Bezier Curve.
 */
 function fitCurve(points) {
+	"use strict";
+
 	// math.js functions used in this function
 	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
 	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1]];
