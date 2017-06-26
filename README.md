@@ -5,8 +5,6 @@ Algorithm for Automatically Fitting Digitized Curves
 by Philip J. Schneider  
 "Graphics Gems", Academic Press, 1990
 
-The alternate version is just something I made for my own use. It assumes the input only has five points and that the first point is (0,0) and the last point is (1,1).
-
 # Usage
 1. Include the JavaScript file.
 
