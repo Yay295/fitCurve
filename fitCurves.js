@@ -28,6 +28,9 @@
 	- Removed zip().
 	- Made bezier functions more readable.
 	- Fixed newtonRaphsonRootFind().
+	V5 Changes:
+	- Simplified loops and other things in generateBezier().
+	- Created local var `len` and removed now unneeded lodash function last().
 */
 
 /*
@@ -45,7 +48,8 @@ function fitCurve(points,maxError) {
 
 	// Remove duplicate points
 	points = points.filter((point,i) => (i === 0 || !(point[0] === points[i-1][0] && point[1] === points[i-1][1])));
-	if (points.length < 2) return [];
+	var len = points.length;
+	if (len < 2) return [];
 
 	// math.js functions used in this file
 	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
@@ -56,9 +60,6 @@ function fitCurve(points,maxError) {
 	var sum = A => A[0]+A[1];
 	var norm = A => Math.sqrt((A[0]*A[0])+(A[1]*A[1]));
 	var normalize = v => divide(v,norm(v));
-
-	// native js implementations of 'lodash' function
-	let last = A => A[A.length-1];
 
 
 	// Functions to evaluate a cubic bezier at t. Returns a point.
@@ -95,71 +96,67 @@ function fitCurve(points,maxError) {
 	};
 
 	function fitCubic(points, leftTangent, rightTangent, error) {
-		if (points.length < 2) return [];
-		if (points.length === 2) {
+		var len = points.length
+
+
+		if (len < 2) return [];
+		if (len === 2) {
 			var dist = norm(subtract(points[0], points[1])) / 3;
 			return [[points[0], add(points[0], multiply(leftTangent, dist)), add(points[1], multiply(rightTangent, dist)), points[1]]];
 		}
 
 
+		// Assign parameter values to digitized points using relative distances between points.
+		var u = [0];
+		for (let i = 1; i < len; ++i)
+			u.push(u[i-1] + norm(subtract(points[i],points[i-1])));
+		for (let i = 0; i < len; ++i)
+			u[i] /= u[len-1];
+
+
 		function generateBezier(points, parameters, leftTangent, rightTangent) {
-			var bezCurve = [points[0], null, null, last(points)];
-			var A = Array(parameters.length).fill([[0,0],[0,0]]);
-
-			for (let i = 0, len = parameters.length; i < len; ++i) {
-				var u = parameters[i];
-				var ux = 1 - u
-				A[i][0] = multiply(leftTangent, 3 * ux * ux * u);
-				A[i][1] = multiply(rightTangent, 3 * ux * u * u);
-			}
-
-			var C = [[0,0],[0,0]];
+			var len = points.length;
+			var bezCurve = [points[0], points[0], points[len-1], points[len-1]];
+			var A = [[0,0],[0,0]];
+			var C = [0,0,0,0];
 			var X = [0,0];
 
-			for (let i = 0, len = points.length; i < len; ++i) {
-				var a = A[i];
+			for (let i = 0; i < len; ++i) {
+				var u = parameters[i];
+				var ux = 1 - u
+				A[0] = multiply(leftTangent, 3 * ux * ux * u);
+				A[1] = multiply(rightTangent, 3 * ux * u * u);
 
-				C[0][0] += dot(a[0],a[0]);
-				C[0][1] += dot(a[0],a[1]);
-				C[1][0] += dot(a[0],a[1]);
-				C[1][1] += dot(a[1],a[1]);
+				C[0] += dot(A[0],A[0]);
+				C[1] += dot(A[0],A[1]);
+				C[2] += dot(A[0],A[1]);
+				C[3] += dot(A[1],A[1]);
 
-				var tmp = subtract(points[i], bezier.q([points[0], points[0], last(points), last(points)], parameters[i]));
-
-				X[0] += dot(a[0],tmp);
-				X[1] += dot(a[1],tmp);
+				var tmp = subtract(points[i],bezier.q(bezCurve,u));
+				X[0] += dot(A[0],tmp);
+				X[1] += dot(A[1],tmp);
 			}
 
-			var det_C0_C1 = (C[0][0] * C[1][1]) - (C[1][0] * C[0][1]);
-			var det_C0_X  = (C[0][0] * X[1]   ) - (C[1][0] * X[0]   );
-			var det_X_C1  = (X[0]    * C[1][1]) - (X[1]    * C[0][1]);
+			var det_C0_C1 = (C[0] * C[3]) - (C[2] * C[1]);
+			var det_C0_X  = (C[0] * X[1]) - (C[2] * X[0]);
+			var det_X_C1  = (X[0] * C[3]) - (X[1] * C[1]);
 			var alpha_l = det_C0_C1 === 0 ? 0 : det_X_C1 / det_C0_C1;
 			var alpha_r = det_C0_C1 === 0 ? 0 : det_C0_X / det_C0_C1;
-			var segLength = norm(subtract(points[0], last(points)));
+			var segLength = norm(subtract(points[0],points[len-1]));
 			var epsilon = 1.0e-6 * segLength;
 
-			if (alpha_l < epsilon || alpha_r < epsilon) {
-				bezCurve[1] = add(bezCurve[0], multiply(leftTangent, segLength / 3));
-				bezCurve[2] = add(bezCurve[3], multiply(rightTangent, segLength / 3));
-			} else {
-				bezCurve[1] = add(bezCurve[0], multiply(leftTangent, alpha_l));
-				bezCurve[2] = add(bezCurve[3], multiply(rightTangent, alpha_r));
-			}
+			if (alpha_l < epsilon || alpha_r < epsilon)
+				alpha_l = alpha_r = segLength / 3;
+			bezCurve[1] = add(bezCurve[0], multiply(leftTangent, alpha_l));
+			bezCurve[2] = add(bezCurve[3], multiply(rightTangent, alpha_r));
 
 			return bezCurve;
 		}
 
-		// Assign parameter values to digitized points using relative distances between points.
-		var u = [0];
-		for (let i = 1, len = points.length; i < len; ++i)
-			u.push(u[i-1] + norm(subtract(points[i],points[i-1])));
-		for (let i = 0, len = u.length; i < len; ++i)
-			u[i] /= last(u);
-
-
 		// Find the maximum squared distance of digitized points to fitted curve.
 		function computeMaxError(points, bez, parameters) {
-			var bParts = 10, maxDist = 0, splitPoint = points.length / 2;
+			var len = points.length;
+			var bParts = 10, maxDist = 0, splitPoint = len / 2;
 
 			// Sample 't's and map them to relative distances along the curve.
 			var tDistMap = ((bez,bParts) => {
@@ -215,7 +212,7 @@ function fitCurve(points,maxError) {
 				}
 			}
 
-			for (let i = 0, len = points.length; i < len; ++i) {
+			for (let i = 0; i < len; ++i) {
 				var v = subtract(bezier.q(bez,find_t(parameters[i],tDistMap,bParts)),points[i]);
 				var dist = v[0] * v[0] + v[1] * v[1];
 				if (dist > maxDist) {
@@ -234,7 +231,7 @@ function fitCurve(points,maxError) {
 
 
 		function reparameterize(bezCurve, points, parameters) {
-			function newtonRaphsonRootFind(bezCurve, point,u) {
+			function newtonRaphsonRootFind(bezCurve, point, u) {
 				// Newton's root finding algorithm calculates f(x)=0 by reiterating x_n+1 = x_n - f(x_n)/f'(x_n)
 				// We are trying to find curve parameter u for some point p that minimizes the
 				// distance from that point to the curve. Distance point to curve is d=q(u)-p.
@@ -295,6 +292,6 @@ function fitCurve(points,maxError) {
 	}
 
 	var leftTangent = normalize(subtract(points[1],points[0]));
-	var rightTangent = normalize(subtract(points[points.length-2],last(points)));
+	var rightTangent = normalize(subtract(points[len-2],points[len-1]));
 	return fitCubic(points,leftTangent,rightTangent,maxError);
 }
