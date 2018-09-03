@@ -28,4 +28,4 @@ My fork was actually made from [this commit](https://github.com/soswow/fit-curve
 
 Back then I didn't use GitHub as much, so I didn't bother uploading it in its own repository. When I finally decided to put it in its own repository a year later, I didn't realize that any changes had been made, and I forked from the latest commit instead of the older correct commit.
 
-Currently our forks are essentially the same. The main differences being that mine just has the JavaScript files (not having an online demo or being NPM/Bower compatible), and that I have an alternate version that returns the point for a single curve rather than an array of curves. Also mine is quite a bit smaller and more self-contained.
+Currently our forks are essentially the same. The main differences being that mine just has the JavaScript files (not having an online demo or being NPM/Bower compatible), and that I have two alternate versions. One that works in three dimensions, and one that returns the point for a single curve rather than an array of curves. Also mine is quite a bit smaller and more self-contained.
