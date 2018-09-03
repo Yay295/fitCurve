@@ -31,6 +31,9 @@
 	V5 Changes:
 	- Simplified loops and other things in generateBezier().
 	- Created local var `len` and removed now unneeded lodash function last().
+	V6 Changes:
+	- Fixed some spelling and grammar inconsistencies.
+	- Use dot product function in two places it was already being done.
 */
 
 /*
@@ -46,12 +49,12 @@
 function fitCurve(points,maxError) {
 	"use strict";
 
-	// Remove duplicate points
+	// Remove duplicate points.
 	points = points.filter((point,i) => (i === 0 || !(point[0] === points[i-1][0] && point[1] === points[i-1][1])));
 	var len = points.length;
 	if (len < 2) return [];
 
-	// math.js functions used in this file
+	// Simplified math.js functions used in this file.
 	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
 	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1]];
 	var multiply = (A,B) => [A[0]*B,A[1]*B];
@@ -187,7 +190,7 @@ function fitCurve(points,maxError) {
 						http://pomax.github.io/bezierinfo/#explanation ), but 't' isn't linear by
 					length ( http://gamedev.stackexchange.com/questions/105230 ). So, we sample
 					some points along the curve using a handful of values for 't'. Then, we
-					calculate the length between those samples via plain euclidean distance; B(t)
+					calculate the length between those samples via plain Euclidean distance; B(t)
 					concentrates the points around sharp turns, so this should give us a good-
 					enough outline of the curve. Thus, for a given relative distance ('param'), we
 					can now find an upper and lower value for the corresponding 't' by searching
@@ -214,7 +217,7 @@ function fitCurve(points,maxError) {
 
 			for (let i = 0; i < len; ++i) {
 				var v = subtract(bezier.q(bez,find_t(parameters[i],tDistMap,bParts)),points[i]);
-				var dist = v[0] * v[0] + v[1] * v[1];
+				var dist = dot(v,v);
 				if (dist > maxDist) {
 					maxDist = dist;
 					splitPoint = i;
@@ -246,7 +249,7 @@ function fitCurve(points,maxError) {
 				var d = subtract(bezier.q(bezCurve,u),point);
 				var qprime = bezier.qprime(bezCurve,u);
 				var numerator = dot(d,qprime);
-				var denominator = sum([qprime[0]*qprime[0],qprime[1]*qprime[1]]) + 2 * dot(d,bezier.qprimeprime(bezCurve,u));
+				var denominator = dot(qprime,qprime) + 2 * dot(d,bezier.qprimeprime(bezCurve,u));
 
 				return (denominator === 0 ? u : (u - numerator / denominator));
 			}
@@ -277,7 +280,7 @@ function fitCurve(points,maxError) {
 		// tangent of the points directly before and after the center, and use that same tangent
 		// both to and from the center point. However, should those two points be equal, the normal
 		// tangent calculation will fail. Instead, we calculate the tangent from that
-		// "double-point" to the center point, and rotate 90deg.
+		// "double-point" to the center point, and rotate 90 degrees.
 		var centerVector = subtract(points[splitPoint-1], points[splitPoint+1]);
 		if ((centerVector[0] === 0) && (centerVector[1] === 0)) {
 			centerVector = subtract(points[splitPoint-1],points[splitPoint]);

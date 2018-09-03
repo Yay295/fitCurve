@@ -34,6 +34,8 @@
 	- Renamed bezier.q() to just bezier().
 	- Created local var `len` and removed now unneeded lodash function last().
 	- Calculate `len` _after_ duplicate points have been removed.
+	V6 Changes:
+	- Fixed some spelling and grammar inconsistencies.
 */
 
 /*
@@ -44,7 +46,7 @@ function fitCurve(points) {
 	"use strict";
 
 
-	// math.js functions used in this file
+	// Simplified math.js functions used in this file.
 	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
 	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1]];
 	var multiply = (A,B) => [A[0]*B,A[1]*B];

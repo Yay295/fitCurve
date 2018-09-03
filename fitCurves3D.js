@@ -10,6 +10,8 @@
 	JavaScript Implementation by Yay295
 	V6 Changes:
 	- Built from V5 of the main code.
+	- Fixed some spelling and grammar inconsistencies.
+	- Use dot product function in two places it was already being done.
 */
 
 /*
@@ -256,7 +258,7 @@ function fitCurve(points,maxError) {
 		// tangent of the points directly before and after the center, and use that same tangent
 		// both to and from the center point. However, should those two points be equal, the normal
 		// tangent calculation will fail. Instead, we calculate the tangent from that
-		// "double-point" to the center point, and rotate 90deg.
+		// "double-point" to the center point, and rotate 90 degrees.
 		var centerVector = subtract(points[splitPoint-1], points[splitPoint+1]);
 		if ((centerVector[0] === 0) && (centerVector[1] === 0) && (centerVector[2] === 0)) {
 			centerVector = subtract(points[splitPoint-1],points[splitPoint]);
