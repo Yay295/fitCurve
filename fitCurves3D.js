@@ -8,33 +8,12 @@
 
 	CoffeeScript Source: https://github.com/soswow/fit-curves/blob/master/src/fitCurves.coffee
 	JavaScript Implementation by Yay295
-	V1 Changes:
-	- The lodash library is no longer required.
-	- The math.js library is still required.
-	- Much better scoping.
-	- It's not CoffeeScript.
-	V2 Changes:
-	- The math.js library is no longer required.
-	- Some bugs were fixed.
-	V3 Changes:
-	- Strict mode added.
-	- Some small issues fixed.
-	V4 Changes:
-	- Added Sphinxxxx's fixes
-		https://github.com/Sphinxxxx/fit-curve/commit/d591b8ee3e05655e935587de507a372b779885a2
-		https://github.com/Sphinxxxx/fit-curve/commit/aebdba75728bd70e021585a1f8ced8425bdb545f
-		https://github.com/soswow/fit-curve/commit/2c9738caaa6544ec0c44bdbec64e7a2397068a49
-		https://github.com/soswow/fit-curve/commit/6c53da16d23b5fb3777afdcf588549c6a024bb60
-	- Removed zip().
-	- Made bezier functions more readable.
-	- Fixed newtonRaphsonRootFind().
-	V5 Changes:
-	- Simplified loops and other things in generateBezier().
-	- Created local var `len` and removed now unneeded lodash function last().
+	V6 Changes:
+	- Built from V5 of the main code.
 */
 
 /*
-	points - An array of points (ex. [[0,0],[1,5],[3,7]]) that reside on the
+	points - An array of points (ex. [[0,0,0],[1,5,4],[3,7,8]]) that reside on the
 	curve to fit.
 
 	maxError - How closely the returned Cubic Bezier Curve should fit to the
@@ -46,19 +25,19 @@
 function fitCurve(points,maxError) {
 	"use strict";
 
-	// Remove duplicate points
-	points = points.filter((point,i) => (i === 0 || !(point[0] === points[i-1][0] && point[1] === points[i-1][1])));
+	// Remove duplicate points.
+	points = points.filter((point,i) => (i === 0 || !(point[0] === points[i-1][0] && point[1] === points[i-1][1] && point[2] === points[i-1][2])));
 	var len = points.length;
 	if (len < 2) return [];
 
-	// math.js functions used in this file
-	var add = (A,B) => [A[0]+B[0],A[1]+B[1]];
-	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1]];
-	var multiply = (A,B) => [A[0]*B,A[1]*B];
-	var divide = (A,B) => [A[0]/B,A[1]/B];
-	var dot = (A,B) => A[0]*B[0]+A[1]*B[1];
-	var sum = A => A[0]+A[1];
-	var norm = A => Math.sqrt((A[0]*A[0])+(A[1]*A[1]));
+	// Simplified math.js functions used in this file.
+	var add = (A,B) => [A[0]+B[0],A[1]+B[1],A[2]+B[2]];
+	var subtract = (A,B) => [A[0]-B[0],A[1]-B[1],A[2]-B[2]];
+	var multiply = (A,B) => [A[0]*B,A[1]*B,A[2]*B];
+	var divide = (A,B) => [A[0]/B,A[1]/B,A[2]/B];
+	var dot = (A,B) => A[0]*B[0]+A[1]*B[1]+A[2]*B[2];
+	var sum = A => A[0]+A[1]+A[2];
+	var norm = A => Math.sqrt((A[0]*A[0])+(A[1]*A[1])+(A[2]*A[2]));
 	var normalize = v => divide(v,norm(v));
 
 
@@ -117,7 +96,7 @@ function fitCurve(points,maxError) {
 		function generateBezier(points, parameters, leftTangent, rightTangent) {
 			var len = points.length;
 			var bezCurve = [points[0], points[0], points[len-1], points[len-1]];
-			var A = [[0,0],[0,0]];
+			var A = [[0,0,0],[0,0,0]];
 			var C = [0,0,0,0];
 			var X = [0,0];
 
@@ -187,7 +166,7 @@ function fitCurve(points,maxError) {
 						http://pomax.github.io/bezierinfo/#explanation ), but 't' isn't linear by
 					length ( http://gamedev.stackexchange.com/questions/105230 ). So, we sample
 					some points along the curve using a handful of values for 't'. Then, we
-					calculate the length between those samples via plain euclidean distance; B(t)
+					calculate the length between those samples via plain Euclidean distance; B(t)
 					concentrates the points around sharp turns, so this should give us a good-
 					enough outline of the curve. Thus, for a given relative distance ('param'), we
 					can now find an upper and lower value for the corresponding 't' by searching
@@ -214,7 +193,7 @@ function fitCurve(points,maxError) {
 
 			for (let i = 0; i < len; ++i) {
 				var v = subtract(bezier.q(bez,find_t(parameters[i],tDistMap,bParts)),points[i]);
-				var dist = v[0] * v[0] + v[1] * v[1];
+				var dist = dot(v,v);
 				if (dist > maxDist) {
 					maxDist = dist;
 					splitPoint = i;
@@ -246,7 +225,7 @@ function fitCurve(points,maxError) {
 				var d = subtract(bezier.q(bezCurve,u),point);
 				var qprime = bezier.qprime(bezCurve,u);
 				var numerator = dot(d,qprime);
-				var denominator = sum([qprime[0]*qprime[0],qprime[1]*qprime[1]]) + 2 * dot(d,bezier.qprimeprime(bezCurve,u));
+				var denominator = dot(qprime,qprime) + 2 * dot(d,bezier.qprimeprime(bezCurve,u));
 
 				return (denominator === 0 ? u : (u - numerator / denominator));
 			}
@@ -279,9 +258,9 @@ function fitCurve(points,maxError) {
 		// tangent calculation will fail. Instead, we calculate the tangent from that
 		// "double-point" to the center point, and rotate 90deg.
 		var centerVector = subtract(points[splitPoint-1], points[splitPoint+1]);
-		if ((centerVector[0] === 0) && (centerVector[1] === 0)) {
+		if ((centerVector[0] === 0) && (centerVector[1] === 0) && (centerVector[2] === 0)) {
 			centerVector = subtract(points[splitPoint-1],points[splitPoint]);
-			centerVector = [-centerVector[1],centerVector[0]];
+			centerVector = [-centerVector[1],centerVector[0],0];
 		}
 
 		var toCenterTangent = normalize(centerVector);
