@@ -254,15 +254,15 @@ function fitCurve(points,maxError) {
 			}
 		}
 
-		// To create a smooth transition from one curve segment to the next, we calculate the
-		// tangent of the points directly before and after the center, and use that same tangent
-		// both to and from the center point. However, should those two points be equal, the normal
-		// tangent calculation will fail. Instead, we calculate the tangent from that
-		// "double-point" to the center point, and rotate 90 degrees.
+		// To create a smooth transition from one curve segment to the next, we calculate the line
+		// between the points directly before and after the center, and use that as the tangent
+		// both to and from the center point. However, this won't work if they're the same point,
+		// because the line we want to use as a tangent would be 0. Instead, we calculate the line
+		// from that "double-point" to the center point, and use its tangent.
 		var centerVector = subtract(points[splitPoint-1], points[splitPoint+1]);
 		if ((centerVector[0] === 0) && (centerVector[1] === 0) && (centerVector[2] === 0)) {
 			centerVector = subtract(points[splitPoint-1],points[splitPoint]);
-			centerVector = [-centerVector[1],centerVector[0],0];
+			[centerVector[0],centerVector[1]] = [-centerVector[1],centerVector[0]];
 		}
 
 		var toCenterTangent = normalize(centerVector);
