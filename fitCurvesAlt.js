@@ -36,6 +36,7 @@
 	- Calculate `len` _after_ duplicate points have been removed.
 	V6 Changes:
 	- Fixed some spelling and grammar inconsistencies.
+	- Implement `norm` using `dot`.
 */
 
 /*
@@ -52,7 +53,7 @@ function fitCurve(points) {
 	var multiply = (A,B) => [A[0]*B,A[1]*B];
 	var divide = (A,B) => [A[0]/B,A[1]/B];
 	var dot = (A,B) => A[0]*B[0]+A[1]*B[1];
-	var norm = A => Math.sqrt((A[0]*A[0])+(A[1]*A[1]));
+	var norm = A => Math.sqrt(dot(A,A));
 	var normalize = v => divide(v,norm(v));
 
 	// Evaluates a cubic bezier at t. Returns a point.

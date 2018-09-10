@@ -11,7 +11,7 @@
 	V6 Changes:
 	- Built from V5 of the main code.
 	- Fixed some spelling and grammar inconsistencies.
-	- Use dot product function in two places it was already being done.
+	- Use dot product function in three places it was already being done.
 */
 
 /*
@@ -39,7 +39,7 @@ function fitCurve(points,maxError) {
 	var divide = (A,B) => [A[0]/B,A[1]/B,A[2]/B];
 	var dot = (A,B) => A[0]*B[0]+A[1]*B[1]+A[2]*B[2];
 	var sum = A => A[0]+A[1]+A[2];
-	var norm = A => Math.sqrt((A[0]*A[0])+(A[1]*A[1])+(A[2]*A[2]));
+	var norm = A => Math.sqrt(dot(A,A));
 	var normalize = v => divide(v,norm(v));
 
 
