@@ -34,6 +34,8 @@
 	V6 Changes:
 	- Fixed some spelling and grammar inconsistencies.
 	- Use dot product function in three places it was already being done.
+	V7 Changes:
+	- Allow a max error value of zero.
 */
 
 /*
@@ -41,7 +43,7 @@
 	curve to fit.
 
 	maxError - How closely the returned Cubic Bezier Curve should fit to the
-	given points. This should be a number greater than 0, with a lesser number
+	given points. This should be a non-negative number, with a smaller number
 	giving a closer fit.
 
 	return - An array of arrays of the four points required for a Cubic Bezier Curve.
@@ -159,7 +161,7 @@ function fitCurve(points,maxError) {
 		// Find the maximum squared distance of digitized points to fitted curve.
 		function computeMaxError(points, bez, parameters) {
 			var len = points.length;
-			var bParts = 10, maxDist = 0, splitPoint = len / 2;
+			var bParts = 10, maxDist = 0, splitPoint = (len / 2) | 0;
 
 			// Sample 't's and map them to relative distances along the curve.
 			var tDistMap = ((bez,bParts) => {
@@ -224,13 +226,13 @@ function fitCurve(points,maxError) {
 				}
 			}
 
-			return [maxDist, splitPoint];
+			return [maxDist,splitPoint];
 		}
 
 		var bezCurve = generateBezier(points, u, leftTangent, rightTangent);
 		var [maxError,splitPoint] = computeMaxError(points, bezCurve, u);
 
-		if (maxError < error) return [bezCurve];
+		if (maxError <= error) return [bezCurve];
 
 
 		function reparameterize(bezCurve, points, parameters) {
@@ -257,7 +259,7 @@ function fitCurve(points,maxError) {
 			return points.map((point,i) => newtonRaphsonRootFind(bezCurve,point,parameters[i]));
 		}
 
-		if (maxError < error*error) {
+		if (maxError <= error*error) {
 			var uPrime = u, prevError = maxError, prevSplit = splitPoint;
 			for (let i = 0; i < 20; ++i) {
 				uPrime = reparameterize(bezCurve, points, uPrime);
